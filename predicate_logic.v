@@ -100,21 +100,46 @@ Proof.
 intros.
 destruct H.
 destruct H.
-apply H.
-Admitted.
+exists x.
+assumption.
+absurd (Q x).
+apply (H0 x).
+assumption.
+Qed.
 
 Theorem pred_035 : (forall y, Q y -> ~exists x, P x) /\ (forall x, P x) -> forall y, ~Q y.
 Proof.
-Admitted.
+intros.
+intro.
+destruct H.
+destruct (H y).
+assumption.
+exists y.
+apply H1.
+Qed.
 
 (* more difficult *)
 Theorem pred_016 : (forall x, P x \/ R x x) -> (forall x, P x -> exists y, R x y /\ R y x) -> forall x, exists y, R x y.
 Proof.
-Admitted.
+intros.
+destruct (H x).
+destruct (H0 x).
+assumption.
+exists x0.
+destruct H2.
+assumption.
+exists x.
+assumption.
+Qed.
 
 Theorem pred_067 : (forall x, ~P x) -> ~exists x, P x.
 Proof.
-Admitted.
+intros.
+intro.
+destruct H0.
+apply (H x).
+assumption.
+Qed.
 
 (* Predicate logic with equality *)
 
@@ -140,16 +165,31 @@ Variable W : D -> D -> D -> Prop.
 
 Theorem example_17 : forall x y, W x x y /\ x = y -> W x y y.
 Proof.
-Admitted.
+intros.
+destruct H.
+rewrite <- H0 in H.
+rewrite <- H0.
+assumption.
+Qed.
 
 
 Theorem pred_059 : (forall x:D, forall y, x = y) -> (exists x, P x) -> forall x, P x.
 Proof.
-Admitted.
+intro H0.
+intro H1.
+intro x.
+destruct H1.
+rewrite <- (H0 x x0) in H.
+assumption.
+Qed.
 
 Theorem pred_058 : (forall x:D, forall y, x = y) /\ P d -> P e.
 Proof.
-Admitted.
+intros.
+destruct H.
+rewrite <- (H e d) in H0.
+assumption.
+Qed.
 
 Section pred_080.
 
@@ -157,7 +197,13 @@ Hypothesis Domain : forall x, (x = c \/ x = d \/ x = e).
 
 Theorem pred_080 : (forall x, P x) -> P e /\ P d /\ P c.
 Proof.
-Admitted.
+intros.
+split.
+apply (H e).
+split.
+apply (H d).
+apply (H c).
+Qed.
 
 
 End pred_080.
