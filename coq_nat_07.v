@@ -5,6 +5,7 @@
    standard library of Coq, but before seeing the definition
    try to think of how would you define that (using addition). *)
 Print mult.
+Check mult.
 
 (* Here is this definition for reference (and in the way you would
    type it in, which slightly differs from the way Coq presents it)
@@ -21,13 +22,18 @@ Fixpoint mult (n m:nat) {struct n} : nat :=
 Lemma mult_0_l : forall n, 0 * n = 0.
 
 Proof.
- (*! proof *)
+intros.
+unfold mult.
+reflexivity.
  
 Qed.
 
 Lemma mult_0_r : forall n, n * 0 = 0.
 
 Proof.
- (*! proof *)
- 
+intros.
+induction n.
+simpl; reflexivity.
+simpl.
+assumption.
 Qed.

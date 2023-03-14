@@ -15,6 +15,7 @@ Proof.
 intros.
 elim n.
 simpl ; reflexivity.
-intros ; simpl ; rewrite H ; reflexivity.
+intros.
+simpl ; rewrite H ; reflexivity.
 
 Qed.

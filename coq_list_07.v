@@ -13,10 +13,16 @@ Fixpoint append (l m : natlist) {struct l} : natlist :=
   end.
 
 Fixpoint length (l : natlist) : nat :=
- (* copy your definition from the previous exercise here *)
+  match l with
+  | nil => 0
+  | cons ele rem => 1 + (length rem)
+  end.
 
 Fixpoint reverse (l : natlist) : natlist :=
- (* copy your definition from the previous exercise here *)
+  match l with
+  | nil => nil
+  | cons ele rem => append (reverse rem) (cons ele nil)
+  end.
 
 (* Now let us prove that reverse does not change the length
    of a list *)
@@ -32,6 +38,13 @@ Lemma reverse_length : forall l,
   length l = length (reverse l).
   
 Proof.
-  (*! proof *)
-  
+  intros.
+  induction l.
+  simpl; reflexivity.
+  simpl.
+  rewrite append_length.
+  simpl.
+  rewrite Nat.add_1_r.
+  rewrite IHl.
+  reflexivity.  
 Qed.

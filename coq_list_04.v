@@ -12,15 +12,21 @@ Fixpoint append (l m : natlist) {struct l} : natlist :=
   | cons x xs => cons x (append xs m)
   end.
   
-Fixpoint length (l : natlist) : nat :=
-  (* copy your definition from the previous exercise here *)
-  
-(* Now let us prove that the length of two concatenated 
-   lists is the sum of the lengths of those lists. *)
+Fixpoint length (l : natlist) {struct l} : nat :=
+  match l with
+  | nil => 0
+  | cons s l => 1 + length l
+  end.
 
 Lemma length_append : forall l m,
   length (append l m) = length l + length m.
   
 Proof.
-  (*! proof *)
+  intros.
+  induction l.
+  simpl.
+  reflexivity.
+  simpl.
+  rewrite IHl.
+  reflexivity.
 Qed.

@@ -11,14 +11,20 @@ Require Import Arith.
 Lemma mult_1_l : forall n, 1 * n = n.
 
 Proof.
-
- (*! proof *)
-
+intros.
+unfold mult.
+rewrite Nat.add_0_r.
+reflexivity.
 Qed.
 
 Lemma mult_1_r : forall n, n * 1 = n.
 
 Proof.
- (*! proof *)
-
+ intros.
+induction n.
+unfold mult.
+reflexivity.
+simpl.
+rewrite IHn.
+reflexivity.
 Qed.

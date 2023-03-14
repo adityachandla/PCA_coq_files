@@ -15,15 +15,16 @@ Fixpoint append (l m : natlist) {struct l} : natlist :=
 (* Now define a function 'reverse' that given a list returns
    the list with the elements in the reversed order. *)
 Fixpoint reverse (l : natlist) : natlist :=
-  (***** write the body of the function here *****)   
-  
-(* Now let us try this definition for an empty list and for
-   lists of length 1 and 2. *)
+  match l with 
+  | nil => nil
+  | cons s rem => append (reverse rem) (cons s nil)
+  end.
 
 Lemma reverse_nil : reverse nil = nil.
 
 Proof.
-  (*! proof *)
+  unfold reverse.
+  reflexivity.
 
 Qed.
 
@@ -31,14 +32,17 @@ Lemma reverse_one_elt : forall a,
   reverse (cons a nil) = cons a nil.
   
 Proof.
-  (*! proof *)
-  
+  intros.
+  unfold reverse.
+  simpl.
+reflexivity.
 Qed.
 
 Lemma reverse_two_elts : forall a b,
   reverse (cons a (cons b nil)) = cons b (cons a nil).
   
 Proof.
-  (*! proof *)
-  
+  intros.
+  simpl.
+  reflexivity.
 Qed.

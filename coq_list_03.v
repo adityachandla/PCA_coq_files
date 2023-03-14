@@ -15,9 +15,12 @@ Fixpoint append (l m : natlist) {struct l} : natlist :=
 (* Now let us define the length function that returns the 
    length of a given list. *)
 
-Fixpoint length (l : natlist) : nat :=
+Fixpoint length (l : natlist) {struct l} : nat :=
   (***** write the body of a function here *****)
-   
+  match l with
+  | nil => 0
+  | cons x xs => 1 + length xs
+  end.
 (* Now let us try this definition on two simple examples.
    (Hint: usually this is a good idea to do that with newly 
    introduced definitions) *)
@@ -25,14 +28,16 @@ Fixpoint length (l : natlist) : nat :=
 Lemma length_nil : length nil = 0.
 
 Proof.
-  (*! proof *)
-
+  unfold length.
+  reflexivity.
 Qed.
 
 Lemma length_3 : forall a b c,
   length (cons a (cons b (cons c nil))) = 3.
   
 Proof.
-  (*! proof *)
+  intros.
+  simpl.
+reflexivity.
   
 Qed.

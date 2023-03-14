@@ -9,8 +9,8 @@
    'Require Import' command. *)
    
 Require Import Plus.
-Check plus_0_l.
-Check plus_0_r.
+Check Nat.add_0_l.
+Check Nat.add_0_r.
 Check plus_n_Sm.
 
 Lemma plus_comm : forall m n, m + n = n + m.
@@ -19,7 +19,7 @@ Proof.
 intros.
 induction m.
 simpl.
-rewrite plus_0_r.
+rewrite Nat.add_0_r.
 reflexivity.
 (*step*)
 simpl.

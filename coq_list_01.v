@@ -25,10 +25,19 @@ Fixpoint append (l m : natlist) {struct l} : natlist :=
 (* Now let us prove how append works with empty lists *)
 
 Lemma append_nil_l : forall l, append nil l = l.
-
 Proof.
-Admitted.
+intros.
+unfold append.
+reflexivity.
+Qed.
 
 Lemma append_nil_r : forall l, append l nil = l.
 Proof.
-Admitted.
+intros.
+induction l.
+unfold append.
+reflexivity.
+simpl.
+rewrite IHl.
+reflexivity.
+Qed.

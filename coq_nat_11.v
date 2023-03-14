@@ -23,6 +23,12 @@ Require Import Lia.
 Lemma stamps : forall i, exists v3, exists v5, i + 8 = 3*v3 + 5*v5.
 
 Proof.
-(* ! *)
+intros.
+induction i.
+exists 1.
+exists 1.
+simpl.
+reflexivity.
+(* Remove 3*3 and add 2* 5*)
 Qed.
 

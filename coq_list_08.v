@@ -13,7 +13,10 @@ Fixpoint append (l m : natlist) {struct l} : natlist :=
   end.
 
 Fixpoint reverse (l : natlist) : natlist :=
- (* copy your definition from the previous exercise here *)
+  match l with
+  | nil => nil
+  | cons ele rem => append (reverse rem) (cons ele nil)
+  end.
 
 (* Now, let us prove that reversing a list twice gives back
    the original list. *)
@@ -26,6 +29,12 @@ Axiom reverse_append : forall l m,
 Lemma reverse_double : forall l, reverse (reverse l) = l.
     
 Proof.
-  (*! proof *)
-
+  intros.
+  induction l.
+  simpl; reflexivity.
+  simpl.
+  rewrite reverse_append.
+  rewrite IHl.
+  simpl.
+  reflexivity.
 Qed.

@@ -13,12 +13,29 @@ Check plus_assoc.
 
 Lemma mult_succ : forall m n, n + n * m = n * S m.
 Proof.
- (*! proof *)
+intros.
+induction n.
+simpl; reflexivity.
+simpl.
+rewrite <- IHn.
+rewrite Nat.add_comm.
+rewrite Nat.add_assoc.
+rewrite Nat.add_comm with (n := m+n*m).
+rewrite Nat.add_assoc.
+rewrite Nat.add_comm with (n := n).
+reflexivity.
 Qed.
 
 Lemma mult_comm : forall m n, m * n = n * m.
 
 Proof.
- (*! proof *)
-
+intros.
+induction m.
+rewrite Nat.mul_0_r.
+simpl.
+reflexivity.
+simpl.
+rewrite IHm.
+rewrite mult_succ.
+reflexivity.
 Qed.

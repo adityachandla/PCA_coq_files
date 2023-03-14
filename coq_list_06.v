@@ -37,10 +37,19 @@ Axiom append_length : forall l m,
   length (append l m) = length l + length m.
 Require Import Arith.
 
+Search (?n + 1).
+
 Lemma reverse_length : forall l,
   length l = length (reverse l).
 
 Proof.
-  (*! proof *)
-  
+  intros.
+  induction l.
+  simpl; reflexivity.
+  simpl.
+  rewrite append_length.
+  simpl.
+  rewrite Nat.add_1_r.
+  rewrite IHl.
+  reflexivity.
 Qed.

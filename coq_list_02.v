@@ -18,7 +18,12 @@ Lemma append_assoc : forall l m n,
   append (append l m) n = append l (append m n).
 
 Proof.
-
-
+intros.
+induction l.
+simpl.
+reflexivity.
+simpl. (*Simplifying the cons*)
+rewrite IHl.
+reflexivity.
 Qed.
 
