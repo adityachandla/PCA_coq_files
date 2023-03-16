@@ -21,6 +21,19 @@ Fixpoint append (l m : natlist) {struct l} : natlist :=
   | nil => m
   | cons x xs => cons x (append xs m)
   end.
+
+Fixpoint append'( l m : natlist) {struct l}: natlist :=
+  match l with 
+    | nil => m
+    | cons x nil => m
+    | cons x (cons y ys) => cons y (append' ys m)
+  end.
+
+Fixpoint append''(l m :natlist) {struct l}: natlist :=
+  match l with
+    | cons x (cons y ys) => cons y (append'' ys m)
+    | _ => m
+end.
   
 (* Now let us prove how append works with empty lists *)
 
@@ -30,14 +43,18 @@ intros.
 unfold append.
 reflexivity.
 Qed.
+(*
+  simpl.
+  auto.
+*)
 
 Lemma append_nil_r : forall l, append l nil = l.
 Proof.
 intros.
 induction l.
-unfold append.
-reflexivity.
-simpl.
-rewrite IHl.
-reflexivity.
+* unfold append.
+  reflexivity.
+* simpl.
+  rewrite IHl.
+  reflexivity.
 Qed.

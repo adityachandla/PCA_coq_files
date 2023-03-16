@@ -20,10 +20,10 @@ Lemma append_assoc : forall l m n,
 Proof.
 intros.
 induction l.
-simpl.
-reflexivity.
-simpl. (*Simplifying the cons*)
-rewrite IHl.
-reflexivity.
+* simpl.
+  reflexivity.
+* simpl. (*Simplifying the cons*)
+  rewrite IHl.
+  reflexivity.
 Qed.
 

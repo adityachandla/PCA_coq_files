@@ -31,5 +31,43 @@ Lemma tree2_In : forall n a b,
   n = a \/ n = b.
   
 Proof.
+  intros.
+  destruct H.
+  left.
+  destruct H.
+  absurd (In n leaf).
+  contradiction.
+  simpl.
+  contradiction.
+  destruct H.
+  rewrite H.
+  reflexivity.
+  absurd (In n leaf); contradiction; simpl.
+  right.  
+  destruct H.
+  rewrite H.
+  reflexivity.
+  absurd (In n leaf); contradiction; simpl.
+Qed.
 
+(*
+  Done in lectures as well.
+  symetric
+*)
+
+
+Lemma tree3_In : forall t1 t2 : nat_tree, forall n b: nat, In n (node (t1 b t2)) ->
+   In a t1 \/ In b t2 \/ n = b.
+Proof.
+Admitted.
+  
+
+
+Lemma tree2_In' : forall n a b, 
+  In n (node (node leaf a leaf) b leaf) ->
+  n = a \/ n = b.
+  
+Proof.
+  intros.
+  simpl in H.
 Qed.

@@ -17,7 +17,12 @@ Fixpoint mirror (T : nat_tree) : nat_tree :=
    twice returs the original tree. *)
     
 Lemma mirror_double : forall T, mirror (mirror T) = T.
-
 Proof.
-
+intros.
+induction T.
+* simpl; reflexivity.
+* simpl.
+  rewrite IHT1.
+  rewrite IHT2.
+  reflexivity.
 Qed.

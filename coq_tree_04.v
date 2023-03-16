@@ -47,7 +47,19 @@ apply IHT2; auto.
 Qed.
 
 Lemma mirror_In_r : forall n T, In n (mirror T) -> In n T.
-Admitted.
+intros.
+induction T.
+* absurd (In n (mirror leaf)).
+  contradiction.
+  assumption.
+* simpl.
+  simpl in H.
+  destruct H as [H1 | [H2 | H3]].
+  right; right.
+  apply IHT2; assumption.
+  right; left; assumption.
+  left; apply IHT1; assumption.
+Qed.
 
 Lemma mirror_In : forall n T, In n T <-> In n (mirror T).
 
