@@ -1,4 +1,6 @@
 Require Import Arith.
+Require Import List.
+Import ListNotations.
 
 Inductive tree : Set :=
 | leaf : tree
@@ -46,30 +48,137 @@ induction t.
   auto.
 Qed.
 
+Fixpoint occurs(n: nat)(t: tree): Prop :=
+  match t with
+    | leaf => False
+    | node l v r => v = n \/ occurs n l \/ occurs n r
+  end.
 
 Fixpoint to_list(T: tree): (list nat) :=
   match T with
     | leaf => nil
-    | node l v r => (to_list l) ++  (cons v nil) ++ (to_list r)
+    | node l v r => (to_list l) ++  v::(to_list r)
   end.
 
-Fixpoint list_min(l: (list nat)): (option nat) := 
+Lemma list_tree_equality: forall t1 t2: tree, forall n: nat, 
+  to_list (node t1 n t2) = (to_list t1) ++ n::(to_list t2).
+Proof.
+intros.
+induction t1.
+  * induction t2.
+    simpl; reflexivity.
+    simpl. reflexivity.
+  * induction t2.
+    simpl. reflexivity.
+    simpl; reflexivity.
+Defined.
+
+Fixpoint occurs_list(l: (list nat))(v: nat): Prop :=
   match l with
-    | nil => None
-    | cons x rem => match (list_min rem) with
-      | None => (Some x)
-      | Some y => if x <? y then (Some x) else (Some y)
-      end
+    | nil => False
+    | cons x xs => x = v \/ occurs_list xs v
   end.
-Fixpoint sort_list(l: (list nat)): (list nat) := 
 
 
-Fixpoint tree_from_list(l: (list nat)): tree := 
-   match l with
+Fixpoint insert_sorted(l: (list nat))(ele: nat): (list nat) :=
+  match l with
+    | nil => [ele]
+    | cons x xs => if x <? ele then [x] ++ (insert_sorted xs ele) 
+      else ele::x::nil ++ xs
+  end.
+
+Lemma insert_sorted_retains_elements: forall l :(list nat), forall x n: nat,
+  occurs_list l x -> occurs_list (insert_sorted l n) x.
+Proof.
+intros.
+induction l.
+- simpl; right; contradiction.
+- simpl.
+  destruct (a <? n).
+  * simpl.
+    simpl in H.
+    destruct H as [H1 | H2].
+    left; assumption.
+    right; apply IHl; assumption.
+  * simpl; simpl in H.
+    destruct H as [H1 | H2].
+    right; left; assumption.
+    right; right; assumption.
+Defined.
+
+Lemma insert_sorted_inserts_element: forall l: (list nat), forall n: nat,
+  occurs_list (insert_sorted l n) n.
+Proof.
+intros.
+induction l.
+- simpl. left. reflexivity.
+- simpl.
+  destruct (a <? n).
+  * simpl; right; assumption.
+  * simpl. left. reflexivity.
+Defined.
+  
+  
+Fixpoint sort_list(l: (list nat)): (list nat) :=
+  match l with
+    | nil => nil
+    | cons x xs => insert_sorted (sort_list xs) x
+  end.
+
+(*
+Compute(sort_list (5::1::3::2::nil)).
+Compute(sort_list nil).
+Compute(sort_list (22::22::11::11::5::1::2::nil)).
+*)
+
+Lemma element_in_sublist: forall l: (list nat), forall a n : nat,
+  occurs_list l n -> occurs_list (a::l) n.
+Proof.
+intros.
+induction l.
+- simpl in H. simpl. right. assumption.
+- simpl.
+(*Left here*)
+
+
+Lemma sorted_list_contains_elements: forall l: (list nat), forall n: nat,
+  occurs_list l n -> occurs_list (sort_list l) n.
+Proof.
+intros.
+induction l.
+- simpl; auto.
+- simpl.
+  apply insert_sorted_retains_elements.
+  apply IHl.
+(*Then here*)
+
+
+
+Fixpoint to_tree(l: (list nat)): tree :=
+  match l with
     | nil => leaf
-    | cons x rem => node leaf x (tree_from_list rem)
+    | cons x xs => node leaf x (to_tree xs)
   end.
 
-(*Keep finding min and recurse on the right side*)  
+Definition sort(t: tree): tree :=
+  to_tree (sort_list (to_list t)).
 
+(*
+Compute(sort (node (node leaf 11 leaf) 44 (node leaf 1 leaf))).
+Compute(sort (node leaf 1 (node leaf 2 (node leaf 3 leaf)))).
+*)
+
+
+
+(*sort_list (to_list t1 ++ n :: to_list t2))*)
+
+Lemma sort_result_bst: forall t: tree, bst (sort t).
+Proof.
+intros.
+induction t.
+* simpl. auto.
+* unfold sort.
+  unfold sort in IHt1; unfold sort in IHt2.
+  rewrite list_tree_equality.
+(* then here *)
 
