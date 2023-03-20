@@ -27,26 +27,8 @@ end.
 Fixpoint insert(n: nat)(T: tree): tree :=
   match T with
   | leaf => node leaf n leaf
-  | node l v r => if Nat.leb n v then (insert n l) else (insert n r)
+  | node l v r => if n <=? v then node (insert n l) v r else node l v (insert n r)
   end.
-
-(*Print Nat.*)
-
-Lemma insert_correctness: forall t: tree, forall n: nat, bst t -> bst (insert n t).
-Proof.
-intros.
-induction t.
-* simpl.
-  auto.
-* simpl insert.
-  destruct (n <=? n0).
-  apply IHt1.
-  destruct H as [H1 [H2 [H3 H4]]].
-  auto.
-  apply IHt2.
-  destruct H as [H1 [H2 [H3 H4]]].
-  auto.
-Qed.
 
 Fixpoint occurs(n: nat)(t: tree): Prop :=
   match t with
@@ -54,146 +36,126 @@ Fixpoint occurs(n: nat)(t: tree): Prop :=
     | node l v r => v = n \/ occurs n l \/ occurs n r
   end.
 
-Fixpoint to_list(T: tree): (list nat) :=
-  match T with
-    | leaf => nil
-    | node l v r => (to_list l) ++  v::(to_list r)
+Fixpoint sort_insert(l: (list nat))(t: tree) {struct l}: (tree) :=
+  match l with
+  | nil => t
+  | cons x xs => insert x (sort_insert xs t)
   end.
 
-Lemma list_tree_equality: forall t1 t2: tree, forall n: nat, 
-  to_list (node t1 n t2) = (to_list t1) ++ n::(to_list t2).
+Fixpoint to_list(t: tree): (list nat) :=
+  match t with
+  | leaf => []
+  | node l v r => (to_list l) ++ v::to_list r
+  end.
+
+Definition sort(t : tree) : tree :=
+  sort_insert (to_list t) leaf.
+
+(* Compute(insert 2 (node leaf 3 leaf)). *)
+
+(*Print Nat.*)
+
+Lemma leq_insert: forall t: tree, forall n n0: nat,
+  n <= n0 /\ all_leq n0 t -> all_leq n0 (insert n t).
 Proof.
 intros.
-induction t1.
-  * induction t2.
-    simpl; reflexivity.
-    simpl. reflexivity.
-  * induction t2.
-    simpl. reflexivity.
-    simpl; reflexivity.
+destruct H.
+induction t.
+- simpl. auto.
+- simpl. simpl in H0.
+  destruct H0 as [H1 [H2 H3]].
+  destruct (n <=? n1) as []eqn:?.
+  * simpl; auto.
+  * simpl; auto.
 Defined.
 
+Lemma ge_insert: forall t: tree, forall n n0: nat,
+  n > n0 /\ all_geq n0 t -> all_geq n0 (insert n t).
+Proof.
+intros.
+destruct H.
+induction t.
+- simpl. auto.
+- simpl. simpl in H0.
+  destruct H0 as [H1 [H2 H3]].
+  destruct (n <=? n1) as []eqn:?.
+  * simpl; auto.
+  * simpl; auto.
+Defined.
 
-
-Lemma to_list_retains_elements: forall t: tree, forall x: nat,
-  occurs x t -> In x (to_list t).
+Lemma insert_correctness: forall t: tree, forall n: nat, bst t -> bst (insert n t).
 Proof.
 intros.
 induction t.
-- simpl. simpl in H. assumption.
-- simpl in H.
-  destruct H.
-  * rewrite H.
-    simpl.
-    apply in_elt.
-  * destruct H.
-    + simpl.
-      apply in_or_app.
-      left; apply IHt1; assumption.
-    + simpl.
-      apply in_or_app.
-      right.
-      apply in_cons.
-      apply IHt2; assumption.
-Defined.
-
-
-Fixpoint insert_sorted(l: (list nat))(ele: nat): (list nat) :=
-  match l with
-    | nil => [ele]
-    | cons x xs => if x <? ele then [x] ++ (insert_sorted xs ele) 
-      else ele::x::nil ++ xs
-  end.
-
-Lemma insert_sorted_retains_elements: forall l :(list nat), forall x n: nat,
-  In x l -> In x (insert_sorted l n).
-Proof.
-intros.
-induction l.
-- simpl; right; contradiction.
-- simpl.
-  destruct (a <? n).
-  * simpl.
-    simpl in H.
-    destruct H as [H1 | H2].
-    left; assumption.
-    right; apply IHl; assumption.
-  * simpl; simpl in H.
-    destruct H as [H1 | H2].
-    right; left; assumption.
-    right; right; assumption.
-Defined.
-
-Lemma insert_sorted_inserts_element: forall l: (list nat), forall n: nat,
-  In n (insert_sorted l n).
-Proof.
-intros.
-induction l.
-- simpl. left. reflexivity.
-- simpl.
-  destruct (a <? n).
-  * simpl; right; assumption.
-  * simpl. left. reflexivity.
-Defined.
-  
-  
-Fixpoint sort_list(l: (list nat)): (list nat) :=
-  match l with
-    | nil => nil
-    | cons x xs => insert_sorted (sort_list xs) x
-  end.
-
-(*
-Compute(sort_list (5::1::3::2::nil)).
-Compute(sort_list nil).
-Compute(sort_list (22::22::11::11::5::1::2::nil)).
-*)
-
-
-Lemma sorted_list_contains_elements: forall l: (list nat), forall n: nat,
-  In n l -> In n (sort_list l).
-Proof.
-intros.
-induction l.
-- simpl; auto.
-- simpl.
-  simpl in H.
-  destruct H.
-  * rewrite H.
-    apply insert_sorted_inserts_element.
-  * apply insert_sorted_retains_elements.
-    apply IHl.
+* simpl; auto.
+* simpl; simpl in H.
+  destruct H as [H1 [H2 [H3 H4]]].
+  destruct (n <=? n0) as []eqn:?.
+  - simpl.
+    repeat split.
+    apply leq_insert.
+    split.
+    apply leb_complete in Heqb.
     assumption.
+    assumption. 
+    assumption.
+    apply IHt1; assumption.
+    assumption.
+  - simpl.
+    apply leb_complete_conv in Heqb.
+    repeat split.
+    assumption.
+    apply ge_insert.
+    auto.
+    assumption.
+    apply IHt2; assumption.
 Defined.
 
-Fixpoint to_tree(l: (list nat)): tree :=
-  match l with
-    | nil => leaf
-    | cons x xs => node leaf x (to_tree xs)
-  end.
-
-Definition sort(t: tree): tree :=
-  to_tree (sort_list (to_list t)).
-
-(*
-Compute(sort (node (node leaf 11 leaf) 44 (node leaf 1 leaf))).
-Compute(sort (node leaf 1 (node leaf 2 (node leaf 3 leaf)))).
-*)
+Compute(sort_insert [3;2;11] leaf).
+Compute(insert 2 (node leaf 3 leaf)).
 
 
+Lemma sort_insert_append_assoc: forall l1 l2: (list nat), forall t: tree,
+  sort_insert (l1 ++ l2) t = sort_insert l1 (sort_insert l2 t).
+Proof.
+intros.
+induction t.
+- induction l1.
+  * auto.
+  * simpl.
+    rewrite IHl1.
+    reflexivity.
+- induction l2.
+  * simpl.
+    rewrite app_nil_r.
+    reflexivity.
+  * simpl.
+  (*TODO*)
+Admitted.
 
-(*sort_list (to_list t1 ++ n :: to_list t2))*)
+Lemma sort_insert_correctness: forall t: tree, forall l: (list nat),
+  bst t -> bst (sort_insert l t).
+Proof.
+intros.
+induction l.
+- auto.
+- simpl.
+  apply insert_correctness.
+  auto.
+Defined.
 
-Lemma occurs_bst_forward: forall t: tree, forall x: nat,
-  occurs x t -> occurs x (sort t).
+Lemma sort_result_is_bst: forall t: tree, bst (sort t).
 Proof.
 intros.
 unfold sort.
+induction t.
+- simpl. tauto.
+- simpl.
+  rewrite sort_insert_append_assoc.
+  simpl.
+  apply sort_insert_correctness.
+  apply insert_correctness.
+  assumption.
+Qed.
 
-
-Lemma sort_result_bst: forall t: tree, bst (sort t).
-Proof.
-intros.
-unfold sort.
-(* then here *)
 
