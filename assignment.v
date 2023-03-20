@@ -73,11 +73,29 @@ induction t1.
     simpl; reflexivity.
 Defined.
 
-Fixpoint occurs_list(l: (list nat))(v: nat): Prop :=
-  match l with
-    | nil => False
-    | cons x xs => x = v \/ occurs_list xs v
-  end.
+
+
+Lemma to_list_retains_elements: forall t: tree, forall x: nat,
+  occurs x t -> In x (to_list t).
+Proof.
+intros.
+induction t.
+- simpl. simpl in H. assumption.
+- simpl in H.
+  destruct H.
+  * rewrite H.
+    simpl.
+    apply in_elt.
+  * destruct H.
+    + simpl.
+      apply in_or_app.
+      left; apply IHt1; assumption.
+    + simpl.
+      apply in_or_app.
+      right.
+      apply in_cons.
+      apply IHt2; assumption.
+Defined.
 
 
 Fixpoint insert_sorted(l: (list nat))(ele: nat): (list nat) :=
@@ -88,7 +106,7 @@ Fixpoint insert_sorted(l: (list nat))(ele: nat): (list nat) :=
   end.
 
 Lemma insert_sorted_retains_elements: forall l :(list nat), forall x n: nat,
-  occurs_list l x -> occurs_list (insert_sorted l n) x.
+  In x l -> In x (insert_sorted l n).
 Proof.
 intros.
 induction l.
@@ -107,7 +125,7 @@ induction l.
 Defined.
 
 Lemma insert_sorted_inserts_element: forall l: (list nat), forall n: nat,
-  occurs_list (insert_sorted l n) n.
+  In n (insert_sorted l n).
 Proof.
 intros.
 induction l.
@@ -131,28 +149,22 @@ Compute(sort_list nil).
 Compute(sort_list (22::22::11::11::5::1::2::nil)).
 *)
 
-Lemma element_in_sublist: forall l: (list nat), forall a n : nat,
-  occurs_list l n -> occurs_list (a::l) n.
-Proof.
-intros.
-induction l.
-- simpl in H. simpl. right. assumption.
-- simpl.
-(*Left here*)
-
 
 Lemma sorted_list_contains_elements: forall l: (list nat), forall n: nat,
-  occurs_list l n -> occurs_list (sort_list l) n.
+  In n l -> In n (sort_list l).
 Proof.
 intros.
 induction l.
 - simpl; auto.
 - simpl.
-  apply insert_sorted_retains_elements.
-  apply IHl.
-(*Then here*)
-
-
+  simpl in H.
+  destruct H.
+  * rewrite H.
+    apply insert_sorted_inserts_element.
+  * apply insert_sorted_retains_elements.
+    apply IHl.
+    assumption.
+Defined.
 
 Fixpoint to_tree(l: (list nat)): tree :=
   match l with
@@ -172,13 +184,16 @@ Compute(sort (node leaf 1 (node leaf 2 (node leaf 3 leaf)))).
 
 (*sort_list (to_list t1 ++ n :: to_list t2))*)
 
+Lemma occurs_bst_forward: forall t: tree, forall x: nat,
+  occurs x t -> occurs x (sort t).
+Proof.
+intros.
+unfold sort.
+
+
 Lemma sort_result_bst: forall t: tree, bst (sort t).
 Proof.
 intros.
-induction t.
-* simpl. auto.
-* unfold sort.
-  unfold sort in IHt1; unfold sort in IHt2.
-  rewrite list_tree_equality.
+unfold sort.
 (* then here *)
 
