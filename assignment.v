@@ -14,16 +14,16 @@ Section TypeAndFunctionDefinitions.
       | node l val r => (val <= n) /\ (all_leq n l) /\ (all_leq n r)
     end.
 
-  Fixpoint all_geq(n: nat)(t: tree): Prop := 
+  Fixpoint all_gr(n: nat)(t: tree): Prop := 
     match t with
       | leaf => True
-      | node l val r => (val > n) /\ (all_geq n l) /\ (all_geq n r)
+      | node l val r => (val > n) /\ (all_gr n l) /\ (all_gr n r)
     end. 
 
   Fixpoint bst (T: tree): Prop :=
     match T with
     | leaf => True
-    | node l v r => (all_leq v l) /\ (all_geq v r) /\ bst l /\ bst r
+    | node l v r => (all_leq v l) /\ (all_gr v r) /\ bst l /\ bst r
   end.
 
   Fixpoint insert(n: nat)(T: tree): tree :=
@@ -36,12 +36,6 @@ Section TypeAndFunctionDefinitions.
     match t with
       | leaf => False
       | node l v r => v = n \/ occurs n l \/ occurs n r
-    end.
-
-  Definition occurs_opt(n: option nat)(t: tree): Prop :=
-    match n with
-      | None => False
-      | Some x => occurs x t
     end.
 
   Fixpoint sort_insert(l: list nat): (tree) :=
@@ -79,7 +73,6 @@ Section TypeAndFunctionDefinitions.
           | (Some x, Some y) => Some (Nat.min v (Nat.min x y))
         end
     end.
-  Print treeMin.
 
   Fixpoint leftmost(t: tree): option nat :=
     match t with
@@ -90,13 +83,13 @@ Section TypeAndFunctionDefinitions.
       end
     end.
   
-  Fixpoint search(t: tree)(n: nat): Prop :=
+  Fixpoint search(n: nat)(t: tree): Prop :=
     match t with
     | leaf => False
     | node l v r => match Nat.compare n v with
-      | Lt => search l n
+      | Lt => search n l
       | Eq => True
-      | Gt => search r n
+      | Gt => search n r
       end
     end.
 
@@ -108,27 +101,17 @@ Compute(sort_insert [3;2;11]).
 Compute(insert 2 (node leaf 3 leaf)).
 Compute (treeMin (node (node leaf 11 leaf) 3 (node leaf 1 (node leaf 3 leaf)))).
 
-Compute(search (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf)) 5).
-Compute(search (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf)) 7).
-Compute(search (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf)) 11).
-Compute(search (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf)) 2).
+Compute(search 5 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
+Compute(search 7 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
+Compute(search 11 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
+Compute(search 2 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
 *)
 
 Section PartOneLemmas.
 
-(* 
-  This section contains:
-  n <= n0 /\ all_leq n0 t -> all_leq n0 (insert n t)
-  n > n0 /\ all_geq n0 t -> all_geq n0 (insert n t)
-  bst t -> bst (insert n t)
-  t1 = t2 -> insert a t1 = insert a t2
-  insert a t1 = insert a t2 -> t1 = t2 ---Incomplete
-  occurs a (insert a t)
-  a = n \/ occurs n t -> occurs n (insert a t)
-  occurs n (insert a t) -> a = n \/ occurs n t
-  
-*)
+
 Section InsertLemmas.
+
   Lemma leq_insert: forall t: tree, forall n n0: nat,
     n <= n0 /\ all_leq n0 t -> all_leq n0 (insert n t).
   Proof.
@@ -144,7 +127,7 @@ Section InsertLemmas.
   Qed.
 
   Lemma gr_insert: forall t: tree, forall n n0: nat,
-    n > n0 /\ all_geq n0 t -> all_geq n0 (insert n t).
+    n > n0 /\ all_gr n0 t -> all_gr n0 (insert n t).
   Proof.
   intros.
   destruct H.
@@ -250,13 +233,10 @@ Section InsertLemmas.
         apply or_assoc. right.
         apply or_comm. auto.
   Defined.
+
 End InsertLemmas.
 
-(*
-  This section contains:
-  occurs x t -> In x (to_list t
-  In x (to_list t) -> occurs x t
-*)
+
 Section ToListLemmas.
   Lemma to_list_retains_elements: forall t: tree, forall x: nat,
     occurs x t -> In x (to_list t).
@@ -295,24 +275,12 @@ Section ToListLemmas.
     * left. auto.
     * right. right. auto.
   Defined.
+
 End ToListLemmas.
 
 
-(*
-  This section contains:
-  sort_insert (l1 ++ l2) t = sort_insert l1 (sort_insert l2 t)
-  bst t -> bst (sort_insert l t)
-  bst (sort t)
-
-  In n l -> occurs n (sort_insert l leaf)
-  occurs n (sort_insert l leaf) -> In n l
-  occurs n t -> occurs n (sort t)
-  occurs n (sort t) -> occurs n t
-  occurs n t <-> occurs n (sort t)
-*)
 Section SortLemmas.
 
-  
   Lemma sort_insert_is_bst: forall l: list nat,
     bst (sort_insert l).
   Proof.
@@ -426,9 +394,171 @@ End PartOneLemmas.
 
 Section PartTwoLemmas.
 
-Lemma min_element_in_tree: forall t: tree,
-  treeMin t <> None -> occurs_opt (treeMin t) t.
-Proof.
-intros.
-Qed.
+  Lemma two_min: forall a b c: nat,
+    Nat.min a b = c -> a = c \/ b = c.
+  Proof.
+  intros.
+  destruct (Nat.le_ge_cases a b).
+  assert (Nat.min a b = a).
+   - intuition.
+   - rewrite H1 in H.
+     auto.
+   - assert (Nat.min a b = b).
+     intuition.
+     rewrite H1 in H.
+     auto.
+  Defined.
+
+  Lemma three_min: forall a b c d: nat,
+    Nat.min a (Nat.min b c) = d -> a = d \/ b = d \/ c = d.
+  Proof.
+  intros.
+  apply two_min in H.
+  destruct H.
+  - auto.
+  - apply two_min in H.
+    auto.
+  Defined.
+
+  Lemma tree_min_breakdown: forall t1 t2: tree, forall n p: nat,
+    treeMin (node t1 n t2) = Some p -> Some p = treeMin t1 \/ Some p = treeMin t2 \/ p = n.
+  Proof.
+  intros.
+  simpl in H.
+  destruct (treeMin t1).
+  - destruct (treeMin t2).
+    * inversion H.
+      rewrite H1.
+      apply three_min in H1.
+      destruct H1 as [h2 | [h3 | h4]]; auto.
+    * inversion H.
+      rewrite H1.
+      apply two_min in H1.
+      destruct H1; auto.
+  - destruct (treeMin t2).
+    * inversion H.
+      rewrite H1.
+      apply two_min in H1.
+      destruct H1; auto.
+    * inversion H.
+      auto.
+  Defined.
+
+  Lemma min_element_exists_in_tree: forall t: tree, forall n: nat,
+    treeMin t = Some n -> occurs n t.
+  Proof.
+  intros.
+  induction t.
+  - inversion H.
+  - apply tree_min_breakdown in H.
+    destruct H as [H1 | [H2 | H3]]; simpl; auto.
+  Defined.
+
+  Lemma min_element_smallest: forall t: tree, forall n: nat,
+    treeMin t = Some n -> all_leq n t.
+  Proof.
+  intros.
+  induction t.
+  - simpl. auto.
+  - simpl.
+    apply min_element_smallest_for_node.
+    assumption.
+  Admitted.
+ 
+
+  Lemma leftmost_element_minimum: forall t: tree,
+    bst t -> treeMin t = leftmost t.
+  Proof.
+  intros.
+  induction t.
+  - auto.
+  - simpl in H.
+    destruct H as [H0 [H1[H2 H3]]].
+    intuition.
+    simpl.
+  Admitted.
+
+  Lemma search_correct_forward: forall t: tree, forall n: nat,
+    bst t -> (occurs n t -> search n t).
+  Proof.
+  intros.
+  induction t.
+  - simpl. auto.
+  - simpl.
+    simpl in H0.
+    destruct (n ?= n0) as []eqn:?.
+    * tauto.
+    * apply IHt1.
+      simpl in H.
+      destruct H as [H1[H2[H3 H4]]].
+      assumption.
+      destruct H0 as [H5 | [H6 | H7]].
+      + apply nat_compare_lt in Heqc.
+        rewrite H5 in Heqc.
+        apply Nat.lt_irrefl in Heqc.
+        contradiction.
+      + assumption.
+      + apply nat_compare_lt in Heqc.
+        absurd (n < n0).
+        simpl in H.
+        destruct H as [H1[H2[H3H4]]].
+  Admitted.
+
+  (*
+  
+  Lemma search_correct_forward: forall t: tree, forall n: nat,
+    bst t -> (occurs n t -> search n t).
+  Proof.
+  intros.
+  induction t.
+  - simpl. auto.
+  - simpl.
+    simpl in H0.
+    destruct H0 as [H5 | [H6 | H7]].
+    * destruct (n ?= n0) as []eqn:?.
+      + tauto.
+      + apply nat_compare_lt in Heqc.
+        rewrite H5 in Heqc.
+        apply Nat.lt_irrefl in Heqc.
+        contradiction.
+      + apply nat_compare_gt in Heqc.
+        rewrite H5 in Heqc.
+        apply Arith_prebase.gt_irrefl_stt in Heqc.
+        contradiction.
+    * destruct (n ?= n0) as []eqn:?.
+      + auto.
+      + simpl in H.
+        destruct H as [H1 [H2 [H3 H4]]].
+        auto.
+      + intuition. (*Need to use a absurd here I think.*)
+  Admitted.*)
+
+  Lemma search_correct_backwards: forall t: tree, forall n: nat,
+    bst t -> (search n t -> occurs n t).
+  Proof.
+  intros.
+  induction t.
+  - auto.
+  - simpl in H.
+    destruct H as [H1 [H2 [H3 H4]]].
+    intuition.
+    simpl.
+    simpl in H0.
+    destruct (n ?= n0) as []eqn:?.
+    * apply nat_compare_eq in Heqc. auto.
+    * auto.
+    * auto.
+  Defined.
+
+  Lemma search_correct: forall t: tree, forall n: nat,
+    bst t -> (search n t <-> occurs n t).
+  Proof.
+  intros.
+  split.
+  apply search_correct_backwards.
+  assumption.
+  apply search_correct_forward.
+  assumption.
+  Qed.
+
 End PartTwoLemmas.
