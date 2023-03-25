@@ -20,6 +20,12 @@ Section TypeAndFunctionDefinitions.
       | node l val r => (val > n) /\ (all_gr n l) /\ (all_gr n r)
     end. 
 
+  Fixpoint all_geq(n: nat)(t: tree): Prop := 
+    match t with
+      | leaf => True
+      | node l v r => (v >= n) /\ (all_geq n l) /\ (all_geq n r)
+    end.
+
   Fixpoint bst (T: tree): Prop :=
     match T with
     | leaf => True
@@ -454,17 +460,19 @@ Section PartTwoLemmas.
     destruct H as [H1 | [H2 | H3]]; simpl; auto.
   Defined.
 
+ 
   Lemma min_element_smallest: forall t: tree, forall n: nat,
-    treeMin t = Some n -> all_leq n t.
+    treeMin t = Some n -> all_geq n t.
   Proof.
   intros.
   induction t.
-  - simpl. auto.
-  - simpl.
-    apply min_element_smallest_for_node.
-    assumption.
+  - inversion H.
+  - simpl in H.
+    destruct (treeMin t1) as []eqn:?; destruct (treeMin t2) as []eqn:?.
+    * inversion H.
+      rewrite H1.
   Admitted.
- 
+
 
   Lemma leftmost_element_minimum: forall t: tree,
     bst t -> treeMin t = leftmost t.
@@ -475,63 +483,65 @@ Section PartTwoLemmas.
   - simpl in H.
     destruct H as [H0 [H1[H2 H3]]].
     intuition.
-    simpl.
+    destruct (treeMin t1) as []eqn:?.
+    * destruct (treeMin t2) as []eqn:?.
+      + 
   Admitted.
 
-  Lemma search_correct_forward: forall t: tree, forall n: nat,
-    bst t -> (occurs n t -> search n t).
-  Proof.
-  intros.
-  induction t.
-  - simpl. auto.
-  - simpl.
-    simpl in H0.
-    destruct (n ?= n0) as []eqn:?.
-    * tauto.
-    * apply IHt1.
-      simpl in H.
-      destruct H as [H1[H2[H3 H4]]].
-      assumption.
-      destruct H0 as [H5 | [H6 | H7]].
-      + apply nat_compare_lt in Heqc.
-        rewrite H5 in Heqc.
-        apply Nat.lt_irrefl in Heqc.
-        contradiction.
-      + assumption.
-      + apply nat_compare_lt in Heqc.
-        absurd (n < n0).
-        simpl in H.
-        destruct H as [H1[H2[H3H4]]].
-  Admitted.
-
-  (*
   
+  Lemma leq_occurs: forall n v: nat, forall t: tree,
+    all_leq v t -> occurs n t -> n <= v.
+  Proof.
+  intros.
+  induction t.
+  - simpl in H0. contradiction.
+  - simpl in H.
+    destruct H as [H1[H2 H3]].
+    simpl in H0.
+    destruct H0 as [H4|[H5|H6]]; try rewrite H4 in H1; intuition.
+  Defined.
+
+  Lemma gr_occurs: forall n v: nat, forall t: tree,
+    all_gr v t -> occurs n t -> v < n.
+  Proof.
+  intros.
+  induction t.
+  - simpl in H0. contradiction.
+  - simpl in H.
+    destruct H as [H1[H2 H3]].
+    simpl in H0.
+    destruct H0 as [H4|[H5|H6]]; try rewrite H4 in H1; intuition.
+  Defined.
+
   Lemma search_correct_forward: forall t: tree, forall n: nat,
     bst t -> (occurs n t -> search n t).
   Proof.
   intros.
   induction t.
   - simpl. auto.
-  - simpl.
+  - destruct H as [H1[H2[H3 H4]]].
     simpl in H0.
-    destruct H0 as [H5 | [H6 | H7]].
-    * destruct (n ?= n0) as []eqn:?.
-      + tauto.
-      + apply nat_compare_lt in Heqc.
-        rewrite H5 in Heqc.
-        apply Nat.lt_irrefl in Heqc.
-        contradiction.
-      + apply nat_compare_gt in Heqc.
-        rewrite H5 in Heqc.
-        apply Arith_prebase.gt_irrefl_stt in Heqc.
-        contradiction.
-    * destruct (n ?= n0) as []eqn:?.
-      + auto.
-      + simpl in H.
-        destruct H as [H1 [H2 [H3 H4]]].
-        auto.
-      + intuition. (*Need to use a absurd here I think.*)
-  Admitted.*)
+    destruct H0 as [H5|[H6|H7]].
+    * simpl.
+      rewrite H5.
+      rewrite Nat.compare_refl.
+      auto.
+    * simpl.
+      assert (n <= n0).
+      apply leq_occurs with (t := t1); assumption.
+      destruct (n ?= n0) as []eqn:?; intuition.
+      apply nat_compare_Gt_gt in Heqc.
+      apply Nat.lt_nge in H.
+      contradiction.
+      assumption.
+    * simpl.
+      assert (n > n0).
+      apply gr_occurs with (t := t2); assumption.
+      destruct (n ?= n0) as []eqn:?; intuition.
+      apply nat_compare_Lt_lt in Heqc.
+      apply Nat.lt_ngt in H.
+      contradiction.
+  Qed.
 
   Lemma search_correct_backwards: forall t: tree, forall n: nat,
     bst t -> (search n t -> occurs n t).
@@ -548,7 +558,7 @@ Section PartTwoLemmas.
     * apply nat_compare_eq in Heqc. auto.
     * auto.
     * auto.
-  Defined.
+  Qed.
 
   Lemma search_correct: forall t: tree, forall n: nat,
     bst t -> (search n t <-> occurs n t).
