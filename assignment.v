@@ -67,17 +67,17 @@ Section TypeAndFunctionDefinitions.
       | Some y => Some (Nat.min x y)
       end
     end.
+
+  Definition omin(a: nat)(b: option nat): nat :=
+    match b with
+      | None => a
+      | Some bv => Nat.min a bv
+    end.
   
   Fixpoint treeMin(t: tree): option nat :=
     match t with
       | leaf => None
-      | node l v r => 
-        match (treeMin l, treeMin r) with
-          | (None, None) => Some v
-          | (None, Some y) => Some (Nat.min v y)
-          | (Some x, None) => Some (Nat.min v x)
-          | (Some x, Some y) => Some (Nat.min v (Nat.min x y))
-        end
+      | node l v r => Some (omin (omin v (treeMin l))(treeMin r))
     end.
 
   Fixpoint leftmost(t: tree): option nat :=
@@ -112,7 +112,6 @@ Compute(search 7 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
 Compute(search 11 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
 Compute(search 2 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
 *)
-
 Section PartOneLemmas.
 
 
@@ -296,7 +295,7 @@ Section SortLemmas.
   - simpl.
     apply insert_correctness.
     assumption.
-  Defined.
+  Qed.
 
   Lemma sort_result_is_bst: forall t: tree, bst (sort t).
   Proof.
@@ -320,7 +319,7 @@ Section SortLemmas.
       auto.
     * apply insert_retains_elements.
       right. auto.
-  Defined.
+  Qed.
 
   Lemma sort_insert_retention_back: forall n: nat, forall l: (list nat),
     occurs n (sort_insert l) -> In n l.
@@ -335,7 +334,7 @@ Section SortLemmas.
     * auto.
     * right.
       auto.
-  Defined.
+  Qed.
 
   Lemma sort_retention_forward: forall n: nat, forall t: tree,
     occurs n t -> occurs n (sort t).
@@ -362,7 +361,7 @@ Section SortLemmas.
       apply in_cons.
       apply to_list_retains_elements.
       assumption.
-  Defined.
+  Qed.
 
   Lemma sort_retention_backward: forall n: nat, forall t: tree,
      occurs n (sort t) -> occurs n t.
@@ -383,7 +382,7 @@ Section SortLemmas.
     * right; right.
       apply to_list_retains_elements_back.
       auto.
-  Defined.
+  Qed.
 
   Lemma sort_retention: forall n: nat, forall t: tree,
     occurs n t <-> occurs n (sort t).
@@ -413,18 +412,17 @@ Section PartTwoLemmas.
      intuition.
      rewrite H1 in H.
      auto.
-  Defined.
+  Qed.
 
   Lemma three_min: forall a b c d: nat,
-    Nat.min a (Nat.min b c) = d -> a = d \/ b = d \/ c = d.
+    Nat.min (Nat.min b c) a = d -> a = d \/ b = d \/ c = d.
   Proof.
   intros.
   apply two_min in H.
   destruct H.
+  - apply two_min in H; auto.
   - auto.
-  - apply two_min in H.
-    auto.
-  Defined.
+  Qed.
 
   Lemma tree_min_breakdown: forall t1 t2: tree, forall n p: nat,
     treeMin (node t1 n t2) = Some p -> Some p = treeMin t1 \/ Some p = treeMin t2 \/ p = n.
@@ -448,7 +446,7 @@ Section PartTwoLemmas.
       destruct H1; auto.
     * inversion H.
       auto.
-  Defined.
+  Qed.
 
   Lemma min_element_exists_in_tree: forall t: tree, forall n: nat,
     treeMin t = Some n -> occurs n t.
@@ -458,37 +456,124 @@ Section PartTwoLemmas.
   - inversion H.
   - apply tree_min_breakdown in H.
     destruct H as [H1 | [H2 | H3]]; simpl; auto.
-  Defined.
+  Qed.
 
- 
+  
+  
+  Lemma omin_eq_geq: forall a b c: nat,
+    omin a (Some b) = c -> a >= c /\ b >= c.
+  Proof.
+  Admitted.
+
+  Lemma omin_select: forall a b c: nat,
+    omin a (Some b) = c -> a = c \/ b = c.
+  Proof.
+  Admitted.
+
+  Lemma omin_geq_geq: forall a b c: nat,
+    omin a (Some b) >= c -> a >= c /\ b >= c.
+  Proof.
+  Admitted.
+
+  Lemma geq_trans: forall t: tree, forall p n: nat,
+    all_geq n t -> p <= n -> all_geq p t.
+  Proof.
+  Admitted.
+
   Lemma min_element_smallest: forall t: tree, forall n: nat,
     treeMin t = Some n -> all_geq n t.
   Proof.
   intros.
   induction t.
-  - inversion H.
-  - simpl in H.
-    destruct (treeMin t1) as []eqn:?; destruct (treeMin t2) as []eqn:?.
+  - inversion H; auto.
+  - destruct (treeMin t1) as []eqn:?; destruct (treeMin t2) as []eqn:?.
     * inversion H.
       rewrite H1.
+      simpl.
+      rewrite Heqo in H1.
+      rewrite Heqo0 in H1.
+      apply omin_eq_geq in H1; destruct H1.
+      apply omin_geq_geq in H0.
+      repeat split; intuition.
   Admitted.
-
-
-  Lemma leftmost_element_minimum: forall t: tree,
-    bst t -> treeMin t = leftmost t.
+  
+  Lemma minimum_element_left_subtree: forall n: nat, forall t1 t2: tree,
+    bst(node t1 n t2) -> t1 <> leaf -> treeMin t1 = treeMin (node t1 n t2).
+  Proof.
+  intros.
+  simpl in H.
+  destruct H as [H1[H2 [H3 H4]]].
+  simpl.
+  Admitted.
+  
+  Lemma all_gr_gr: forall n n1: nat, forall t: tree,
+    all_gr n t -> occurs n1 t -> n < n1.
   Proof.
   intros.
   induction t.
-  - auto.
-  - simpl in H.
-    destruct H as [H0 [H1[H2 H3]]].
-    intuition.
-    destruct (treeMin t1) as []eqn:?.
-    * destruct (treeMin t2) as []eqn:?.
-      + 
-  Admitted.
+  - simpl in H0. contradiction.
+  - simpl in H0.
+    simpl in H.
+    destruct H as [H1 [H2 H3]].
+    destruct H0 as [H4|[H5|H6]].
+    * rewrite <- H4; intuition.
+    * intuition.
+    * intuition.
+  Qed.
 
-  
+  Lemma minimum_element_empty_subtree: forall n: nat, forall t1 t2: tree,
+    bst(node t1 n t2) -> t1 = leaf -> Some n = treeMin (node t1 n t2).
+  Proof.
+  intros.
+  rewrite H0.
+  simpl.
+  simpl in H.
+  destruct H as [H1[H2 [H3 H4]]].
+  destruct (treeMin t2) as []eqn:?.
+  - unfold omin.
+    apply min_element_exists_in_tree in Heqo.
+    assert (n < n0).
+    apply all_gr_gr with (t := t2); intuition.
+    apply Nat.lt_le_incl in H.
+    rewrite Nat.min_l; intuition.
+  - intuition.
+  Qed.
+
+  (*
+  Search Nat.min.
+  Search (?a < ?b -> ?a <= ?b).
+  *)
+
+  Lemma leftmost_empty: forall t: tree,
+    leftmost t = None -> t = leaf.
+  Proof.
+  intros.
+  induction t.
+  - reflexivity.
+  - simpl in H.
+    destruct (leftmost t1) as []eqn:?;inversion H. 
+  Qed.
+
+  Lemma leftmost_element_minimum: forall t: tree, forall n: nat,
+    bst t -> treeMin t = Some n -> leftmost t = Some n.
+  Proof.
+  intros.
+  induction t.
+  - inversion H; intuition.
+  - simpl.
+    destruct (leftmost t1) as []eqn:?.
+    * apply IHt1.
+      simpl in H; intuition.
+      rewrite <- H0.
+      apply minimum_element_left_subtree;intuition.
+      rewrite H1 in Heqo.
+      inversion Heqo.
+    * rewrite <- H0.
+      apply minimum_element_empty_subtree; intuition.
+      apply leftmost_empty; intuition.
+  Qed.
+
+
   Lemma leq_occurs: forall n v: nat, forall t: tree,
     all_leq v t -> occurs n t -> n <= v.
   Proof.
@@ -499,7 +584,7 @@ Section PartTwoLemmas.
     destruct H as [H1[H2 H3]].
     simpl in H0.
     destruct H0 as [H4|[H5|H6]]; try rewrite H4 in H1; intuition.
-  Defined.
+  Qed.
 
   Lemma gr_occurs: forall n v: nat, forall t: tree,
     all_gr v t -> occurs n t -> v < n.
@@ -511,7 +596,7 @@ Section PartTwoLemmas.
     destruct H as [H1[H2 H3]].
     simpl in H0.
     destruct H0 as [H4|[H5|H6]]; try rewrite H4 in H1; intuition.
-  Defined.
+  Qed.
 
   Lemma search_correct_forward: forall t: tree, forall n: nat,
     bst t -> (occurs n t -> search n t).
@@ -572,3 +657,28 @@ Section PartTwoLemmas.
   Qed.
 
 End PartTwoLemmas.
+  Qed.
+  Qed.
+  Qed.
+  Qed.
+  Qed.
+  Qed.
+  Qed.
+  Qed.
+  Qed.
+  Qed.
+  Qed.
+      destruct H1 as [h2 | [h3 | h4]]; auto.
+    * inversion H.
+      rewrite H1.
+      apply two_min in H1.
+      destruct H1; auto.
+  - destruct (treeMin t2).
+    * inversion H.
+      rewrite H1.
+      apply two_min in H1.
+      destruct H1; auto.
+    * inversion H.
+      auto.
+  Qed.
+  Qed.
