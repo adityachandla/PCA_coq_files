@@ -2,8 +2,7 @@ Require Import Arith.
 Require Import List.
 Import ListNotations.
 
-
-Section TypeAndFunctionDefinitions.
+(** Inductive definitions and methods for both Part 1 and Part 2 *)
   Inductive tree : Set :=
   | leaf : tree
   | node : tree -> nat -> tree -> tree.
@@ -58,15 +57,6 @@ Section TypeAndFunctionDefinitions.
 
   Definition sort(t : tree) : tree :=
     sort_insert (to_list t).
-  
-  Fixpoint list_min(l: list nat) : option nat:=
-    match l with
-    | nil => None
-    | cons x xs => match list_min xs with
-      | None => Some x
-      | Some y => Some (Nat.min x y)
-      end
-    end.
 
   Definition omin(a: nat)(b: option nat): nat :=
     match b with
@@ -99,23 +89,12 @@ Section TypeAndFunctionDefinitions.
       end
     end.
 
-End TypeAndFunctionDefinitions.
 
-(*
-Compute(insert 2 (node leaf 3 leaf)).
-Compute(sort_insert [3;2;11]).
-Compute(insert 2 (node leaf 3 leaf)).
-Compute (treeMin (node (node leaf 11 leaf) 3 (node leaf 1 (node leaf 3 leaf)))).
+(** * Part 1
+ *)
 
-Compute(search 5 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
-Compute(search 7 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
-Compute(search 11 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
-Compute(search 2 (node (node leaf 2 leaf) 5 (node (node leaf 7 leaf) 8 leaf))).
+(** ** Lemmas related to insert function
 *)
-Section PartOneLemmas.
-
-
-Section InsertLemmas.
 
   Lemma leq_insert: forall t: tree, forall n n0: nat,
     n <= n0 /\ all_leq n0 t -> all_leq n0 (insert n t).
@@ -172,7 +151,7 @@ Section InsertLemmas.
       auto.
       assumption.
       apply IHt2; assumption.
-  Defined.
+  Qed.
 
   Lemma inserted_element_present: forall t: tree, forall a: nat,
     occurs a (insert a t).
@@ -207,42 +186,27 @@ Section InsertLemmas.
       + destruct (a <=? n0).
         simpl. auto.
         simpl. auto.
-  Defined.
+  Qed.
 
   Lemma insert_retains_elements_back: forall t: tree, forall a n: nat,
      occurs n (insert a t) -> a = n \/ occurs n t.
   Proof.
   intros.
   induction t.
-  - simpl in H. destruct H as [H1|[H2|H3]]. auto. auto. auto.
+  - simpl in H. destruct H as [H1|[H2|H3]]; intuition.
   - simpl in H.
     destruct (a <=? n0).
     * simpl in H.
       simpl.
-      destruct H as [H1|[H2|H3]].
-      + auto.
-      + apply or_comm. apply or_assoc. right. 
-        apply or_assoc. apply or_comm. apply or_assoc. right.
-        auto.
-      + apply or_comm. apply or_assoc. right.
-        apply or_assoc. right.
-        auto.
+      destruct H as [H1|[H2|H3]]; intuition.
     * simpl.
       simpl in H.
-      destruct H as [H1|[H2|H3]].
-      + auto.
-      + apply or_comm. apply or_assoc. right.
-        apply or_assoc. apply or_comm. apply or_assoc. right.
-        auto.
-      + apply or_comm. apply or_assoc. right.
-        apply or_assoc. right.
-        apply or_comm. auto.
-  Defined.
+      destruct H as [H1|[H2|H3]]; intuition.
+  Qed.
 
-End InsertLemmas.
+(** ** Lemmas related to to_list function
+*)
 
-
-Section ToListLemmas.
   Lemma to_list_retains_elements: forall t: tree, forall x: nat,
     occurs x t -> In x (to_list t).
   Proof.
@@ -250,20 +214,11 @@ Section ToListLemmas.
   induction t.
   - simpl. simpl in H. assumption.
   - simpl in H.
-    destruct H.
-    * rewrite H.
-      simpl.
-      apply in_elt.
-    * destruct H.
-      + simpl.
-        apply in_or_app.
-        left; apply IHt1; assumption.
-      + simpl.
-        apply in_or_app.
-        right.
-        apply in_cons.
-        apply IHt2; assumption.
-  Defined.
+    destruct H as [H1|[H2|H3]]; simpl; try apply in_or_app; intuition.
+    rewrite H1.
+    simpl.
+    intuition.
+  Qed.
 
   Lemma to_list_retains_elements_back: forall t: tree, forall x: nat,
     In x (to_list t) -> occurs x t.
@@ -275,16 +230,11 @@ Section ToListLemmas.
     simpl in H.
     apply in_app_or in H.
     simpl.
-    destruct H as [H1|[H2|H3]].
-    * auto.
-    * left. auto.
-    * right. right. auto.
-  Defined.
+    destruct H as [H1|[H2|H3]]; auto.
+  Qed.
 
-End ToListLemmas.
-
-
-Section SortLemmas.
+(** ** Lemmas related to sort function
+*)
 
   Lemma sort_insert_is_bst: forall l: list nat,
     bst (sort_insert l).
@@ -297,13 +247,12 @@ Section SortLemmas.
     assumption.
   Qed.
 
-  Lemma sort_result_is_bst: forall t: tree, bst (sort t).
+  Lemma sort_result_is_bst: forall t: tree, 
+    bst (sort t).
   Proof.
   intros.
   unfold sort.
-  induction t.
-  - simpl. tauto.
-  - apply sort_insert_is_bst.
+  apply sort_insert_is_bst.
   Qed.
 
   Lemma sort_insert_retention: forall n: nat, forall l: (list nat),
@@ -314,11 +263,7 @@ Section SortLemmas.
   - auto.
   - simpl.
     simpl in H.
-    destruct H.
-    * apply insert_retains_elements.
-      auto.
-    * apply insert_retains_elements.
-      right. auto.
+    destruct H; apply insert_retains_elements; intuition.
   Qed.
 
   Lemma sort_insert_retention_back: forall n: nat, forall l: (list nat),
@@ -330,10 +275,7 @@ Section SortLemmas.
   - simpl.
     simpl in H.
     apply insert_retains_elements_back in H.
-    destruct H.
-    * auto.
-    * right.
-      auto.
+    destruct H; intuition.
   Qed.
 
   Lemma sort_retention_forward: forall n: nat, forall t: tree,
@@ -393,23 +335,24 @@ Section SortLemmas.
   apply sort_retention_backward.
   Qed.
 
-End SortLemmas.
 
-End PartOneLemmas.
+(** * Part 2
+*)
 
-Section PartTwoLemmas.
-
+  (** Minimum element exists in the tree lemmas *)
   Lemma two_min: forall a b c: nat,
     Nat.min a b = c -> a = c \/ b = c.
   Proof.
   intros.
   destruct (Nat.le_ge_cases a b).
   assert (Nat.min a b = a).
-   - intuition.
+   - apply Nat.min_l in H0. assumption.
    - rewrite H1 in H.
      auto.
    - assert (Nat.min a b = b).
-     intuition.
+     apply Nat.min_l in H0.
+     rewrite Nat.min_comm in H0.
+     assumption.
      rewrite H1 in H.
      auto.
   Qed.
@@ -458,8 +401,7 @@ Section PartTwoLemmas.
     destruct H as [H1 | [H2 | H3]]; simpl; auto.
   Qed.
 
-  
-  
+  (** Minimum element minimum*)
   Lemma omin_eq_geq: forall a b c: nat,
     omin a (Some b) = c -> a >= c /\ b >= c.
   Proof.
@@ -496,7 +438,47 @@ Section PartTwoLemmas.
       apply omin_geq_geq in H0.
       repeat split; intuition.
   Admitted.
+
+  (** Leftmost element minimum lemmas *)
   
+
+  Lemma all_leq_occurs: forall t: tree,forall n n1: nat,
+    occurs n t -> all_leq n1 t -> n <= n1.
+  Proof.
+  intros.
+  induction t.
+  - simpl in H. contradiction.
+  - simpl in H.
+    simpl in H0.
+    destruct H0 as [H1[H2 H3]].
+    destruct H as [H4|[H5|H6]]; intuition.
+    rewrite <- H4.
+    assumption.
+  Qed.
+
+  Lemma all_ge_occurs: forall t: tree,forall n n1: nat,
+    occurs n t -> all_gr n1 t -> n > n1.
+  Proof.
+  intros.
+  induction t.
+  - simpl in H. contradiction.
+  - simpl in H.
+    simpl in H0.
+    destruct H0 as [H1[H2 H3]].
+    destruct H as [H4|[H5|H6]];intuition.
+    rewrite <- H4.
+    assumption.
+  Qed.
+  
+  Lemma tree_min_none: forall t: tree,
+    treeMin t = None -> t = leaf.
+  Proof.
+  intros.
+  induction t; intuition.
+  simpl in H.
+  discriminate H.
+  Qed.
+
   Lemma minimum_element_left_subtree: forall n: nat, forall t1 t2: tree,
     bst(node t1 n t2) -> t1 <> leaf -> treeMin t1 = treeMin (node t1 n t2).
   Proof.
@@ -504,8 +486,35 @@ Section PartTwoLemmas.
   simpl in H.
   destruct H as [H1[H2 [H3 H4]]].
   simpl.
-  Admitted.
-  
+  destruct (treeMin t1) as []eqn:?.
+  - destruct (treeMin t2) as []eqn:?.
+    * simpl.
+      apply min_element_exists_in_tree in Heqo.
+      apply min_element_exists_in_tree in Heqo0.
+      assert (n1 > n).
+      apply all_ge_occurs with (t:=t2);intuition.
+      assert (n0 <= n).
+      apply all_leq_occurs with (t:=t1); intuition.
+      assert (n1 > n0).
+      apply Arith_prebase.gt_le_trans_stt with (m:=n); assumption.
+      apply Nat.min_l in H5.
+      rewrite Nat.min_comm in H5.
+      rewrite H5.
+      assert (Nat.min n0 n1 = n0); intuition.
+    * simpl.
+      apply min_element_exists_in_tree in Heqo.
+      assert (n0 <= n).
+      apply all_leq_occurs with (t:=t1); intuition.
+      apply Nat.min_l in H.
+      rewrite Nat.min_comm in H.
+      intuition.
+  - simpl.
+    intuition.
+    destruct H0.
+    apply tree_min_none; assumption.
+  Qed.
+
+
   Lemma all_gr_gr: forall n n1: nat, forall t: tree,
     all_gr n t -> occurs n1 t -> n < n1.
   Proof.
@@ -539,11 +548,6 @@ Section PartTwoLemmas.
   - intuition.
   Qed.
 
-  (*
-  Search Nat.min.
-  Search (?a < ?b -> ?a <= ?b).
-  *)
-
   Lemma leftmost_empty: forall t: tree,
     leftmost t = None -> t = leaf.
   Proof.
@@ -573,7 +577,7 @@ Section PartTwoLemmas.
       apply leftmost_empty; intuition.
   Qed.
 
-
+  (** Search correctness lemmas *)
   Lemma leq_occurs: forall n v: nat, forall t: tree,
     all_leq v t -> occurs n t -> n <= v.
   Proof.
@@ -597,6 +601,7 @@ Section PartTwoLemmas.
     simpl in H0.
     destruct H0 as [H4|[H5|H6]]; try rewrite H4 in H1; intuition.
   Qed.
+  
 
   Lemma search_correct_forward: forall t: tree, forall n: nat,
     bst t -> (occurs n t -> search n t).
@@ -654,31 +659,4 @@ Section PartTwoLemmas.
   assumption.
   apply search_correct_forward.
   assumption.
-  Qed.
-
-End PartTwoLemmas.
-  Qed.
-  Qed.
-  Qed.
-  Qed.
-  Qed.
-  Qed.
-  Qed.
-  Qed.
-  Qed.
-  Qed.
-  Qed.
-      destruct H1 as [h2 | [h3 | h4]]; auto.
-    * inversion H.
-      rewrite H1.
-      apply two_min in H1.
-      destruct H1; auto.
-  - destruct (treeMin t2).
-    * inversion H.
-      rewrite H1.
-      apply two_min in H1.
-      destruct H1; auto.
-    * inversion H.
-      auto.
-  Qed.
   Qed.
